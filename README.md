@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Stock Market AI Agent
 
 An AI-powered agent that fetches live market data, runs technical analysis, and produces investment summaries with BUY / HOLD / SELL recommendations.
@@ -91,3 +92,6 @@ This tool generates AI analysis for **informational purposes only**. It is **not
 - [ ] Scheduled daily reports
 - [ ] Additional data sources (Alpha Vantage, news sentiment APIs)
 - [ ] Backtesting recommendations
+=======
+# Stock-Analyzer-Agent
+>>>>>>> 67d2f95ac317f54bc534ae53887934fb74f2b054
