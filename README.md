@@ -86,11 +86,3 @@ Display Report (CLI)
 ## Disclaimer
 
 This tool generates analysis for **informational purposes only**. It is **not financial advice**. Always do your own research and consult a licensed financial advisor before making investment decisions.
-
-## Roadmap
-
-- [ ] Multi-stock portfolio analysis
-- [ ] Web dashboard (FastAPI + React)
-- [ ] Scheduled daily reports
-- [ ] Additional data sources (Alpha Vantage, news sentiment APIs)
-- [ ] Backtesting recommendations
