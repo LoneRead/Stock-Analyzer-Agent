@@ -19,7 +19,7 @@ console = Console()
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="AI-powered stock market analysis and recommendations"
+        description="Local stock market analysis and recommendations"
     )
     parser.add_argument(
         "ticker",
@@ -31,11 +31,26 @@ def main() -> None:
         choices=["1mo", "3mo", "6mo", "1y", "2y"],
         help="Historical data period (default: 6mo)",
     )
+    parser.add_argument(
+        "--model",
+        default=None,
+        help="Ollama model to use (default: llama3.2:3b)",
+    )
+    parser.add_argument(
+        "--rules-only",
+        action="store_true",
+        help="Use rule-based analysis instead of Ollama",
+    )
     args = parser.parse_args()
 
     try:
-        with console.status(f"[bold green]Analyzing {args.ticker.upper()}..."):
-            agent = StockAnalysisAgent()
+        status = f"[bold green]Analyzing {args.ticker.upper()}"
+        if not args.rules_only:
+            model = args.model or "llama3.2:3b"
+            status += f" with {model}"
+        status += "..."
+        with console.status(status):
+            agent = StockAnalysisAgent(model=args.model, use_ollama=not args.rules_only)
             result = agent.analyze(args.ticker, period=args.period)
     except ValueError as e:
         console.print(f"[bold red]Error:[/] {e}")
@@ -110,7 +125,11 @@ def _render_report(result: dict) -> None:
     if analysis.get("price_outlook"):
         console.print(Panel(analysis["price_outlook"], title="Short-Term Outlook"))
 
+    engine = result.get("engine", "unknown")
+    model = result.get("model")
+    engine_label = f"{engine} ({model})" if model and engine == "ollama" else engine
     console.print()
+    console.print(f"[dim]Analysis engine: {engine_label}[/]")
     console.print(f"[dim italic]{result['disclaimer']}[/]")
 
 

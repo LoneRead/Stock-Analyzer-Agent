@@ -1,14 +1,25 @@
-<<<<<<< HEAD
-# Stock Market AI Agent
+# Stock Market Analyzer Agent
 
-An AI-powered agent that fetches live market data, runs technical analysis, and produces investment summaries with BUY / HOLD / SELL recommendations.
+A locally-run stock analysis tool that fetches live market data, computes technical indicators, and produces investment summaries with BUY / HOLD / SELL recommendations — powered by **Ollama** (no cloud API keys).
 
 ## Features
 
 - **Live market data** via Yahoo Finance (prices, volume, fundamentals, news)
 - **Technical indicators** — SMA (20/50/200), RSI, MACD
-- **AI analysis** — structured summary, bullish/bearish factors, risks, and recommendations
+- **Local LLM analysis** via Ollama (default: `llama3.2:3b`)
+- **Rule-based fallback** if Ollama is unavailable
 - **CLI interface** — rich terminal output with color-coded recommendations
+
+## Prerequisites
+
+- [Ollama](https://ollama.com/) installed and running
+- A local model pulled, e.g.:
+
+```bash
+ollama pull llama3.2:3b
+# or
+ollama pull qwen2.5:1.5b
+```
 
 ## Quick Start
 
@@ -18,51 +29,40 @@ An AI-powered agent that fetches live market data, runs technical analysis, and 
 pip install -r requirements.txt
 ```
 
-### 2. Configure API key
-
-Copy the example env file and add your OpenAI API key:
-
-```bash
-copy .env.example .env
-```
-
-Edit `.env`:
-
-```
-OPENAI_API_KEY=sk-your-key-here
-OPENAI_MODEL=gpt-4o-mini
-```
-
-### 3. Run an analysis
+### 2. Run an analysis
 
 ```bash
 python main.py AAPL
 python main.py MSFT --period 1y
-python main.py TSLA --period 3mo
+python main.py TSLA --model qwen2.5:1.5b
+python main.py NVDA --rules-only
 ```
 
-## Example Output
+### CLI options
 
-The agent prints:
+| Flag | Description |
+|------|-------------|
+| `--period` | Historical window: `1mo`, `3mo`, `6mo`, `1y`, `2y` |
+| `--model` | Ollama model name (default: `llama3.2:3b`) |
+| `--rules-only` | Skip Ollama, use rule-based analysis |
 
-- Stock overview (price, daily/monthly change)
-- **Recommendation** (BUY / HOLD / SELL) with confidence level
-- Executive summary
-- Key metrics table (P/E, RSI, trend, etc.)
-- Technical and fundamental analysis
-- Bullish / bearish factors and risks
-- Short-term price outlook
+Set a default model via environment variable:
+
+```bash
+set OLLAMA_MODEL=qwen2.5:1.5b
+```
 
 ## Project Structure
 
 ```
-├── main.py           # CLI entry point
-├── agent.py          # AI agent (orchestrates data + LLM)
-├── data_fetcher.py   # Yahoo Finance data fetching
-├── indicators.py     # Technical indicator calculations
-├── config.py         # Environment configuration
-├── requirements.txt
-└── .env.example
+├── main.py            # CLI entry point
+├── agent.py           # Orchestrates data fetching + analysis
+├── ollama_analyzer.py # Ollama LLM analysis
+├── local_analyzer.py  # Rule-based fallback engine
+├── data_fetcher.py    # Yahoo Finance data fetching
+├── indicators.py      # Technical indicator calculations
+├── config.py          # App configuration
+└── requirements.txt
 ```
 
 ## How It Works
@@ -74,16 +74,18 @@ Fetch Data (yfinance) ──→ Price history, fundamentals, news
     ↓
 Compute Indicators ──→ RSI, MACD, SMA, trend
     ↓
-Build Context ──→ Structured JSON for the LLM
+Build Context ──→ Structured JSON
     ↓
-AI Analysis (OpenAI) ──→ Summary + Recommendation
+Ollama (local LLM) ──→ Summary + Recommendation
+    ↓ (fallback if Ollama fails)
+Rule-based engine
     ↓
 Display Report (CLI)
 ```
 
 ## Disclaimer
 
-This tool generates AI analysis for **informational purposes only**. It is **not financial advice**. Always do your own research and consult a licensed financial advisor before making investment decisions.
+This tool generates analysis for **informational purposes only**. It is **not financial advice**. Always do your own research and consult a licensed financial advisor before making investment decisions.
 
 ## Roadmap
 
@@ -92,6 +94,3 @@ This tool generates AI analysis for **informational purposes only**. It is **not
 - [ ] Scheduled daily reports
 - [ ] Additional data sources (Alpha Vantage, news sentiment APIs)
 - [ ] Backtesting recommendations
-=======
-# Stock-Analyzer-Agent
->>>>>>> 67d2f95ac317f54bc534ae53887934fb74f2b054
