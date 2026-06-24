@@ -71,6 +71,7 @@ def _render_report(result: dict) -> None:
     fundamentals = market["fundamentals"]
     technicals = market["technical_indicators"]
 
+    currency_symbol = fundamentals.get("currency_symbol", "$")
     rec = analysis.get("recommendation", "N/A").upper()
     confidence = analysis.get("confidence", "N/A")
     rec_color = {"BUY": "green", "HOLD": "yellow", "SELL": "red"}.get(rec, "white")
@@ -79,7 +80,7 @@ def _render_report(result: dict) -> None:
     console.print(
         Panel(
             f"[bold]{name}[/] ({ticker})\n"
-            f"Current Price: [bold]${price['current_price']}[/]  "
+            f"Current Price: [bold]{currency_symbol}{price['current_price']}[/]  "
             f"Day: [{'green' if price['day_change_pct'] >= 0 else 'red'}]"
             f"{price['day_change_pct']:+.2f}%[/]  "
             f"Month: [{'green' if price['month_change_pct'] >= 0 else 'red'}]"
@@ -105,7 +106,11 @@ def _render_report(result: dict) -> None:
     metrics.add_row("Sector", str(fundamentals["sector"]))
     metrics.add_row("Market Cap", str(fundamentals["market_cap"]))
     metrics.add_row("P/E Ratio", str(fundamentals["pe_ratio"]))
-    metrics.add_row("52W High / Low", f"${fundamentals['fifty_two_week_high']} / ${fundamentals['fifty_two_week_low']}")
+    high_val = fundamentals.get("fifty_two_week_high", "N/A")
+    low_val = fundamentals.get("fifty_two_week_low", "N/A")
+    high_str = f"{currency_symbol}{high_val}" if high_val != "N/A" else "N/A"
+    low_str = f"{currency_symbol}{low_val}" if low_val != "N/A" else "N/A"
+    metrics.add_row("52W High / Low", f"{high_str} / {low_str}")
     metrics.add_row("RSI (14)", str(technicals["rsi_14"]))
     metrics.add_row("Trend", str(technicals["trend"]))
     metrics.add_row("SMA 20 / 50", f"{technicals['sma_20']} / {technicals['sma_50']}")

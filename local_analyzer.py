@@ -15,9 +15,10 @@ def analyze_stock(context: dict[str, Any]) -> dict[str, Any]:
     bullish, bearish = _collect_signals(price, fundamentals, technicals)
     risks = _collect_risks(price, fundamentals, technicals)
     recommendation, confidence, score = _score_recommendation(bullish, bearish)
+    currency_symbol = fundamentals.get("currency_symbol", "$")
 
     return {
-        "summary": _build_summary(ticker, fundamentals["name"], price, recommendation, confidence),
+        "summary": _build_summary(ticker, fundamentals["name"], price, recommendation, confidence, currency_symbol),
         "technical_analysis": _build_technical_analysis(price, technicals, period),
         "fundamental_analysis": _build_fundamental_analysis(fundamentals),
         "news_sentiment": _build_news_sentiment(news),
@@ -105,12 +106,13 @@ def _collect_signals(
     current = price["current_price"]
     high_52w = fundamentals.get("fifty_two_week_high")
     low_52w = fundamentals.get("fifty_two_week_low")
+    currency_symbol = fundamentals.get("currency_symbol", "$")
     if isinstance(high_52w, (int, float)) and isinstance(low_52w, (int, float)):
         range_position = (current - low_52w) / (high_52w - low_52w) if high_52w != low_52w else 0.5
         if range_position > 0.85:
-            bearish.append(f"Near 52-week high (${high_52w:.2f}) — limited upside room")
+            bearish.append(f"Near 52-week high ({currency_symbol}{high_52w:.2f}) — limited upside room")
         elif range_position < 0.15:
-            bullish.append(f"Near 52-week low (${low_52w:.2f}) — potential value entry")
+            bullish.append(f"Near 52-week low ({currency_symbol}{low_52w:.2f}) — potential value entry")
 
     return bullish, bearish
 
@@ -169,11 +171,16 @@ def _score_recommendation(
 
 
 def _build_summary(
-    ticker: str, name: str, price: dict[str, Any], recommendation: str, confidence: str
+    ticker: str,
+    name: str,
+    price: dict[str, Any],
+    recommendation: str,
+    confidence: str,
+    currency_symbol: str = "$",
 ) -> str:
     direction = "higher" if price["day_change_pct"] >= 0 else "lower"
     return (
-        f"{name} ({ticker}) is trading at ${price['current_price']}, "
+        f"{name} ({ticker}) is trading at {currency_symbol}{price['current_price']}, "
         f"{abs(price['day_change_pct']):.2f}% {direction} on the day. "
         f"Based on technical indicators, fundamentals, and price action, "
         f"the local analysis engine suggests {recommendation} with {confidence.lower()} confidence."
@@ -194,13 +201,16 @@ def _build_technical_analysis(
 
 
 def _build_fundamental_analysis(fundamentals: dict[str, Any]) -> str:
+    currency_symbol = fundamentals.get("currency_symbol", "$")
+    target = fundamentals.get("analyst_target", "N/A")
+    target_str = f"{currency_symbol}{target}" if target != "N/A" else "N/A"
     return (
         f"{fundamentals['name']} operates in the {fundamentals['sector']} sector "
         f"({fundamentals['industry']}). Market cap is {fundamentals['market_cap']} "
         f"with a trailing P/E of {fundamentals['pe_ratio']} and forward P/E of {fundamentals['forward_pe']}. "
         f"EPS is {fundamentals['eps']}, beta is {fundamentals['beta']}, "
         f"and analyst consensus is \"{fundamentals['recommendation']}\" "
-        f"with a mean price target of {fundamentals['analyst_target']}."
+        f"with a mean price target of {target_str}."
     )
 
 

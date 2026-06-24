@@ -9,8 +9,19 @@ import yfinance as yf
 
 def fetch_stock_data(ticker: str, period: str = "6mo") -> dict[str, Any]:
     """Fetch price history, quote info, and recent news for a ticker."""
-    stock = yf.Ticker(ticker.upper())
+    ticker_upper = ticker.upper()
+    stock = yf.Ticker(ticker_upper)
     history = stock.history(period=period)
+
+    # Fallback: if data is empty and the ticker does not have a suffix, try appending '.NS' for Indian stocks
+    if history.empty and "." not in ticker_upper:
+        fallback_ticker = f"{ticker_upper}.NS"
+        stock_fallback = yf.Ticker(fallback_ticker)
+        history_fallback = stock_fallback.history(period=period)
+        if not history_fallback.empty:
+            stock = stock_fallback
+            history = history_fallback
+            ticker_upper = fallback_ticker
 
     if history.empty:
         raise ValueError(f"No data found for ticker '{ticker}'. Check the symbol and try again.")
@@ -19,7 +30,7 @@ def fetch_stock_data(ticker: str, period: str = "6mo") -> dict[str, Any]:
     news = _fetch_news(stock)
 
     return {
-        "ticker": ticker.upper(),
+        "ticker": ticker_upper,
         "history": history,
         "info": info,
         "news": news,
@@ -86,11 +97,12 @@ def summarize_price_action(history: pd.DataFrame) -> dict[str, Any]:
 
 def summarize_fundamentals(info: dict[str, Any]) -> dict[str, Any]:
     """Extract useful fundamental data from yfinance info dict."""
+    currency = info.get("currency", "USD")
     return {
         "name": info.get("longName") or info.get("shortName", "Unknown"),
         "sector": info.get("sector", "N/A"),
         "industry": info.get("industry", "N/A"),
-        "market_cap": _format_large_number(info.get("marketCap")),
+        "market_cap": _format_large_number(info.get("marketCap"), currency),
         "pe_ratio": _safe_round(info.get("trailingPE")),
         "forward_pe": _safe_round(info.get("forwardPE")),
         "eps": _safe_round(info.get("trailingEps")),
@@ -102,20 +114,48 @@ def summarize_fundamentals(info: dict[str, Any]) -> dict[str, Any]:
         "profit_margins": _safe_round(info.get("profitMargins")),
         "analyst_target": _safe_round(info.get("targetMeanPrice")),
         "recommendation": info.get("recommendationKey", "N/A"),
+        "currency": currency,
+        "currency_symbol": get_currency_symbol(currency),
     }
 
 
-def _format_large_number(value: Any) -> str:
+def get_currency_symbol(currency_code: str | None) -> str:
+    if not currency_code:
+        return "$"
+    mapping = {
+        "USD": "$",
+        "INR": "Rs. ",
+        "EUR": "€",
+        "GBP": "£",
+        "CAD": "C$",
+        "AUD": "A$",
+        "JPY": "¥",
+        "CNY": "¥",
+    }
+    return mapping.get(currency_code.upper(), f"{currency_code.upper()} ")
+
+
+def _format_large_number(value: Any, currency_code: str | None = "USD") -> str:
     if value is None:
         return "N/A"
     value = float(value)
-    if value >= 1e12:
-        return f"${value / 1e12:.2f}T"
-    if value >= 1e9:
-        return f"${value / 1e9:.2f}B"
-    if value >= 1e6:
-        return f"${value / 1e6:.2f}M"
-    return f"${value:,.0f}"
+    symbol = get_currency_symbol(currency_code)
+    if currency_code and currency_code.upper() == "INR":
+        if value >= 1e12:
+            return f"{symbol}{value / 1e12:.2f} Lakh Cr"
+        if value >= 1e7:
+            return f"{symbol}{value / 1e7:.2f} Cr"
+        if value >= 1e5:
+            return f"{symbol}{value / 1e5:.2f} Lakh"
+        return f"{symbol}{value:,.0f}"
+    else:
+        if value >= 1e12:
+            return f"{symbol}{value / 1e12:.2f}T"
+        if value >= 1e9:
+            return f"{symbol}{value / 1e9:.2f}B"
+        if value >= 1e6:
+            return f"{symbol}{value / 1e6:.2f}M"
+        return f"{symbol}{value:,.0f}"
 
 
 def _safe_round(value: Any, decimals: int = 2) -> float | str:
