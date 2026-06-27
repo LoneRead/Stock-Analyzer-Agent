@@ -9,6 +9,7 @@ A locally-run stock analysis tool that fetches live market data, computes techni
 - **Local LLM analysis** via Ollama (default: `llama3.2:3b`)
 - **Rule-based fallback** if Ollama is unavailable
 - **CLI interface** — rich terminal output with color-coded recommendations
+- **Web Dashboard UI** — interactive local web application to search tickers, select periods, toggle analysis mode (Rules vs. AI), and visualize stock metrics & charts
 
 ## Prerequisites
 
@@ -29,7 +30,17 @@ ollama pull qwen2.5:1.5b
 pip install -r requirements.txt
 ```
 
-### 2. Run an analysis
+### 2. Run the Web Dashboard
+
+To launch the web interface:
+
+```bash
+python server.py
+```
+
+Then open your browser and navigate to **[http://localhost:8000](http://localhost:8000)**.
+
+### 3. Run a CLI-based analysis
 
 ```bash
 python main.py AAPL
@@ -56,13 +67,15 @@ set OLLAMA_MODEL=qwen2.5:1.5b
 
 ```
 ├── main.py            # CLI entry point
+├── server.py          # FastAPI web server & static files host
 ├── agent.py           # Orchestrates data fetching + analysis
 ├── ollama_analyzer.py # Ollama LLM analysis
 ├── local_analyzer.py  # Rule-based fallback engine
 ├── data_fetcher.py    # Yahoo Finance data fetching
 ├── indicators.py      # Technical indicator calculations
 ├── config.py          # App configuration
-└── requirements.txt
+├── requirements.txt
+└── static/            # Frontend assets (HTML, CSS, JS)
 ```
 
 ## How It Works

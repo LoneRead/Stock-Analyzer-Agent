@@ -45,11 +45,26 @@ class StockAnalysisAgent:
         else:
             analysis = analyze_with_rules(context)
 
+        # Parse history DataFrame into a JSON-serializable chart data format
+        import pandas as pd
+        history_df = raw_data["history"]
+        chart_data = []
+        for date_val, row in history_df.iterrows():
+            chart_data.append({
+                "date": date_val.strftime("%Y-%m-%d") if hasattr(date_val, "strftime") else str(date_val),
+                "open": round(float(row["Open"]), 2) if "Open" in row and pd.notna(row["Open"]) else 0.0,
+                "high": round(float(row["High"]), 2) if "High" in row and pd.notna(row["High"]) else 0.0,
+                "low": round(float(row["Low"]), 2) if "Low" in row and pd.notna(row["Low"]) else 0.0,
+                "close": round(float(row["Close"]), 2) if "Close" in row and pd.notna(row["Close"]) else 0.0,
+                "volume": int(row["Volume"]) if "Volume" in row and pd.notna(row["Volume"]) else 0,
+            })
+
         return {
             "ticker": raw_data["ticker"],
             "company_name": fundamentals["name"],
             "fetched_at": raw_data["fetched_at"],
             "market_data": context,
+            "chart_data": chart_data,
             "analysis": analysis,
             "engine": engine,
             "model": self.model if self.use_ollama else None,

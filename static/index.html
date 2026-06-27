@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Analyzer</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+        rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS stylesheet -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="glow-bg"></div>
+    <div class="app-container">
+        <!-- Sidebar or Header controls -->
+        <header class="main-header glass-card">
+            <div class="brand">
+                <div class="logo-glow"></div>
+                <i class="fa-solid fa-chart-line logo-icon"></i>
+                <h1>Stock Analyzer</h1>
+            </div>
+
+            <form id="search-form" class="controls-form">
+                <div class="input-group">
+                    <label for="ticker-input"><i class="fa-solid fa-search"></i> Ticker</label>
+                    <input type="text" id="ticker-input" placeholder="e.g. AAPL" value="AAPL" required
+                        autocomplete="off">
+                </div>
+
+                <div class="input-group">
+                    <label for="period-select"><i class="fa-solid fa-calendar"></i> Period</label>
+                    <div class="select-wrapper">
+                        <select id="period-select">
+                            <option value="1mo">1 Month</option>
+                            <option value="3mo">3 Months</option>
+                            <option value="6mo" selected>6 Months</option>
+                            <option value="1y">1 Year</option>
+                            <option value="2y">2 Years</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label><i class="fa-solid fa-robot"></i> Analysis Mode</label>
+                    <div class="toggle-container">
+                        <span class="toggle-label rules-label active">Rules</span>
+                        <label class="switch">
+                            <input type="checkbox" id="mode-toggle">
+                            <span class="slider round"></span>
+                        </label>
+                        <span class="toggle-label ai-label">AI Model</span>
+                    </div>
+                </div>
+
+                <div class="input-group model-input-group hidden" id="model-input-container">
+                    <label for="model-input"><i class="fa-solid fa-microchip"></i> Ollama Model</label>
+                    <input type="text" id="model-input" placeholder="llama3.2:3b" value="llama3.2:3b">
+                </div>
+
+                <button type="submit" class="btn-analyze">
+                    <span>Analyze Ticker</span>
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                </button>
+            </form>
+        </header>
+
+        <!-- Loading State -->
+        <div id="loading-container" class="loading-container hidden">
+            <div class="loader-content">
+                <div class="spinner-container">
+                    <div class="spinner"></div>
+                    <div class="spinner-inner"></div>
+                </div>
+                <h3 id="loader-title">Analyzing AAPL...</h3>
+                <p id="loader-subtitle">Fetching price history, technical signals, and company fundamentals</p>
+                <div class="progress-bar">
+                    <div class="progress-bar-fill"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div id="error-container" class="error-container glass-card hidden">
+            <i class="fa-solid fa-circle-exclamation error-icon"></i>
+            <h2>Analysis Failed</h2>
+            <p id="error-message">Something went wrong.</p>
+            <button onclick="dismissError()" class="btn-secondary">Dismiss</button>
+        </div>
+
+        <!-- Main Dashboard Content -->
+        <main id="dashboard-content" class="dashboard-grid">
+
+            <!-- Row 1: Stock Summary & Recommendation -->
+            <section class="overview-section grid-col-8 glass-card">
+                <div class="overview-header">
+                    <div>
+                        <div class="company-badge" id="company-sector-badge">Technology</div>
+                        <h2 id="company-name" class="company-name">Apple Inc.</h2>
+                        <div class="ticker-sub" id="ticker-display">AAPL // NASDAQ</div>
+                    </div>
+                    <div class="price-container">
+                        <div class="current-price" id="current-price">$185.40</div>
+                        <div class="price-changes">
+                            <span class="change-tag" id="day-change"><i class="fa-solid fa-caret-up"></i> +1.20%
+                                (Day)</span>
+                            <span class="change-tag" id="month-change"><i class="fa-solid fa-caret-down"></i> -2.40%
+                                (Month)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="range-sliders">
+                    <div class="range-item">
+                        <div class="range-labels">
+                            <span>52W Low</span>
+                            <span class="range-title">52-Week Range</span>
+                            <span>52W High</span>
+                        </div>
+                        <div class="range-bar-wrapper">
+                            <span id="low-52w-text" class="range-val">$165.00</span>
+                            <div class="range-bar-bg">
+                                <div class="range-bar-fill" id="range-52w-fill" style="left: 20%; width: 60%;"></div>
+                                <div class="range-bar-indicator" id="range-52w-dot" style="left: 50%;"></div>
+                            </div>
+                            <span id="high-52w-text" class="range-val">$198.00</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="rec-section grid-col-4 glass-card rec-hold" id="rec-card">
+                <div class="card-glow"></div>
+                <div class="rec-tag">RECOMMENDATION</div>
+                <h2 class="rec-value" id="rec-value">HOLD</h2>
+                <div class="confidence-wrapper">
+                    <span>Confidence:</span>
+                    <span class="confidence-badge badge-medium" id="confidence-value">Medium</span>
+                </div>
+                <p class="rec-reasoning" id="rec-reasoning">
+                    Signals are mixed, suggesting a wait-and-see approach. Technical indicators show short-term
+                    consolidation while valuation remains fair.
+                </p>
+            </section>
+
+            <!-- Row 2: Price Chart -->
+            <section class="chart-section grid-col-12 glass-card">
+                <div class="chart-header">
+                    <h3><i class="fa-solid fa-chart-area"></i> Price History & Volume</h3>
+                    <div class="chart-controls">
+                        <span class="chart-period-tag" id="chart-period-display">6 Months</span>
+                    </div>
+                </div>
+                <div class="chart-canvas-container">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </section>
+
+            <!-- Row 3: Key Metrics Grid -->
+            <section class="metrics-section grid-col-12">
+                <div class="section-title">
+                    <h3><i class="fa-solid fa-list-check"></i> Key Metrics</h3>
+                </div>
+                <div class="metrics-grid">
+                    <div class="metric-card glass-card">
+                        <div class="metric-icon"><i class="fa-solid fa-industry"></i></div>
+                        <div class="metric-info">
+                            <span class="metric-label">Sector</span>
+                            <span class="metric-val" id="m-sector">Technology</span>
+                        </div>
+                    </div>
+                    <div class="metric-card glass-card">
+                        <div class="metric-icon"><i class="fa-solid fa-landmark"></i></div>
+                        <div class="metric-info">
+                            <span class="metric-label">Market Cap</span>
+                            <span class="metric-val" id="m-market-cap">$2.89T</span>
+                        </div>
+                    </div>
+                    <div class="metric-card glass-card">
+                        <div class="metric-icon"><i class="fa-solid fa-percentage"></i></div>
+                        <div class="metric-info">
+                            <span class="metric-label">P/E Ratio</span>
+                            <span class="metric-val" id="m-pe">28.4</span>
+                        </div>
+                    </div>
+                    <div class="metric-card glass-card">
+                        <div class="metric-icon"><i class="fa-solid fa-coins"></i></div>
+                        <div class="metric-info">
+                            <span class="metric-label">EPS (Trailing)</span>
+                            <span class="metric-val" id="m-eps">6.13</span>
+                        </div>
+                    </div>
+                    <div class="metric-card glass-card">
+                        <div class="metric-icon"><i class="fa-solid fa-gauge-high"></i></div>
+                        <div class="metric-info">
+                            <span class="metric-label">RSI (14)</span>
+                            <span class="metric-val" id="m-rsi">48.2 (Neutral)</span>
+                        </div>
+                    </div>
+                    <div class="metric-card glass-card">
+                        <div class="metric-icon"><i class="fa-solid fa-arrow-trend-up"></i></div>
+                        <div class="metric-info">
+                            <span class="metric-label">Trend</span>
+                            <span class="metric-val" id="m-trend">Mixed / Consolidating</span>
+                        </div>
+                    </div>
+                    <div class="metric-card glass-card">
+                        <div class="metric-icon"><i class="fa-solid fa-bolt"></i></div>
+                        <div class="metric-info">
+                            <span class="metric-label">Beta (Volatility)</span>
+                            <span class="metric-val" id="m-beta">1.28</span>
+                        </div>
+                    </div>
+                    <div class="metric-card glass-card">
+                        <div class="metric-icon"><i class="fa-solid fa-wave-square"></i></div>
+                        <div class="metric-info">
+                            <span class="metric-label">MACD Signal</span>
+                            <span class="metric-val" id="m-macd">Bullish Momentum</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Row 4: Detailed Analysis Tabs -->
+            <section class="analysis-tabs-section grid-col-12 glass-card">
+                <div class="tabs-header">
+                    <button class="tab-btn active" onclick="switchTab(event, 'tech-tab')">
+                        <i class="fa-solid fa-gears"></i> Technical Analysis
+                    </button>
+                    <button class="tab-btn" onclick="switchTab(event, 'fund-tab')">
+                        <i class="fa-solid fa-chart-pie"></i> Fundamental Analysis
+                    </button>
+                    <button class="tab-btn" onclick="switchTab(event, 'sentiment-tab')">
+                        <i class="fa-solid fa-newspaper"></i> News Sentiment
+                    </button>
+                </div>
+
+                <div class="tab-content active" id="tech-tab">
+                    <p id="technical-analysis-text">
+                        Loading technical analysis...
+                    </p>
+                </div>
+
+                <div class="tab-content" id="fund-tab">
+                    <p id="fundamental-analysis-text">
+                        Loading fundamental analysis...
+                    </p>
+                </div>
+
+                <div class="tab-content" id="sentiment-tab">
+                    <p id="sentiment-analysis-text">
+                        Loading news sentiment...
+                    </p>
+                </div>
+            </section>
+
+            <!-- Row 5: Bullish, Bearish, and Risks -->
+            <section class="factors-section grid-col-4 glass-card factor-bullish">
+                <div class="factor-header">
+                    <i class="fa-solid fa-circle-arrow-up factor-icon"></i>
+                    <h3>Bullish Factors</h3>
+                </div>
+                <ul class="factor-list" id="bullish-list">
+                    <li>Loading factors...</li>
+                </ul>
+            </section>
+
+            <section class="factors-section grid-col-4 glass-card factor-bearish">
+                <div class="factor-header">
+                    <i class="fa-solid fa-circle-arrow-down factor-icon"></i>
+                    <h3>Bearish Factors</h3>
+                </div>
+                <ul class="factor-list" id="bearish-list">
+                    <li>Loading factors...</li>
+                </ul>
+            </section>
+
+            <section class="factors-section grid-col-4 glass-card factor-risks">
+                <div class="factor-header">
+                    <i class="fa-solid fa-triangle-exclamation factor-icon"></i>
+                    <h3>Key Risks</h3>
+                </div>
+                <ul class="factor-list" id="risks-list">
+                    <li>Loading risks...</li>
+                </ul>
+            </section>
+
+            <!-- Row 6: Outlook -->
+            <section class="outlook-section grid-col-12 glass-card">
+                <h3><i class="fa-solid fa-eye"></i> Short-Term Price Outlook</h3>
+                <p id="outlook-text" class="outlook-text">
+                    Loading outlook...
+                </p>
+            </section>
+
+        </main>
+
+        <footer class="app-footer">
+            <div class="footer-meta">
+                <span>Engine: <strong id="meta-engine">Rules Engine</strong></span>
+                <span class="separator">|</span>
+                <span>Last Updated: <strong id="meta-time">N/A</strong></span>
+            </div>
+            <p class="disclaimer" id="meta-disclaimer">
+                Disclaimer goes here...
+            </p>
+        </footer>
+    </div>
+
+    <!-- App Logic Script -->
+    <script src="/static/js/app.js"></script>
+</body>
+
+</html>
