@@ -1,4 +1,4 @@
-# Stock Market Analyzer Agent
+# Stock Market Analyzer
 
 A locally-run stock analysis tool that fetches live market data, computes technical indicators, and produces investment summaries with BUY / HOLD / SELL recommendations — powered by **Ollama** (no cloud API keys).
 
